@@ -466,7 +466,9 @@ const LOCATIONS = {
       { to: "stalingrad",    reason: "El Alamein and Stalingrad — twin turning points of autumn 1942" },
       { to: "tobruk",        reason: "Desert war seesawed between Tobruk and El Alamein for two years" },
       { to: "kasserine_pass",reason: "American forces that landed at Torch met their first defeat at Kasserine" },
-      { to: "tunis",         reason: "Eighth Army closed from the east while First Army pushed from the west" }
+      { to: "tunis",         reason: "Eighth Army closed from the east while First Army pushed from the west" },
+      { to: "malta",         reason: "Malta strangled Rommel's supplies — the unseen battle behind the desert war" },
+      { to: "sidi_barrani",  reason: "The desert war began at Sidi Barrani in Dec 1940 and reached its peak at El Alamein" }
     ]
   },
 
@@ -485,9 +487,11 @@ const LOCATIONS = {
       { date: "Nov 1942", event: "After El Alamein, Rommel retreats through Tobruk. British re-enter the devastated city." }
     ],
     connections: [
-      { to: "north_africa",reason: "The desert war ran between Tobruk and El Alamein for two years" },
-      { to: "bir_hakeim",  reason: "Free French stand at Bir Hakeim delayed Rommel's Tobruk assault by two weeks" },
-      { to: "tunis",       reason: "Rommel retreated west through Libya to the final Tunisian bridgehead" }
+      { to: "north_africa",   reason: "The desert war ran between Tobruk and El Alamein for two years" },
+      { to: "bir_hakeim",     reason: "Free French stand at Bir Hakeim delayed Rommel's assault by two weeks" },
+      { to: "halfaya_pass",   reason: "Halfaya Pass guarded the coastal approach to Tobruk from Egypt" },
+      { to: "sidi_barrani",   reason: "O'Connor's westward sweep through Sidi Barrani first took Tobruk in Jan 1941" },
+      { to: "tunis",          reason: "Rommel retreated west through Libya to the final Tunisian bridgehead" }
     ]
   },
 
@@ -616,6 +620,177 @@ const LOCATIONS = {
       { to: "tunis",         reason: "Operation Torch forces that landed here squeezed east toward Tunis" },
       { to: "kasserine_pass",reason: "Green Torch troops suffered at Kasserine before reforming for final Tunisia push" },
       { to: "normandy",      reason: "D-Day cross-Channel invasion was formally confirmed at the Casablanca Conference" }
+    ]
+  },
+
+  // ── AFRICA — WESTERN DESERT (DEEP CUT) ───────────────────────────────
+
+  sidi_barrani: {
+    name: "Sidi Barrani, Egypt",
+    lat: 31.62, lng: 25.92,
+    type: "battle", typeLabel: "Operation Compass — Desert Opening",
+    minZoom: 5,
+    summary: "Sidi Barrani is where the entire North African campaign began — and where Italy's war in the desert effectively ended before it started. In September 1940, Marshal Graziani's army of 150,000 Italians invaded Egypt and stopped at Sidi Barrani, building a string of fortified camps in the desert. They sat there for three months. In December, British General O'Connor attacked with just 36,000 men in what was planned as a five-day raid. The Italians collapsed so completely that O'Connor just kept going. 38,000 Italian prisoners were taken in 72 hours at Sidi Barrani alone. The raid became a rout that would cover 500 miles and destroy an entire army.",
+    timeline: [
+      { date: "Sept 9, 1940", event: "Graziani's 10th Army invades Egypt. Advances 60 miles and stops at Sidi Barrani. Builds fortified camps and waits." },
+      { date: "Oct–Nov 1940", event: "Italian camps sit static. O'Connor plans a surprise attack. Operation Compass: a five-day raid, nothing more." },
+      { date: "Dec 8, 1940", event: "Operation Compass begins. British and Indian troops move through the gaps between Italian camps at night." },
+      { date: "Dec 9–10, 1940", event: "Italian camps attacked from the rear and sides. 38,000 Italians surrender at Sidi Barrani alone. The garrison collapses." },
+      { date: "Dec 11, 1940", event: "Pursuit begins. O'Connor refuses to stop. The five-day raid turns into a full campaign." },
+      { date: "Dec 1940 – Feb 1941", event: "British advance 500 miles. 130,000 prisoners. 400 tanks captured. The Italian 10th Army ceases to exist." }
+    ],
+    connections: [
+      { to: "beda_fomm",    reason: "The pursuit from Sidi Barrani ended at Beda Fomm — the final trap" },
+      { to: "tobruk",       reason: "Tobruk fell to O'Connor's advance three weeks after Sidi Barrani" },
+      { to: "north_africa", reason: "Sidi Barrani was the opening of the desert war; El Alamein was its climax" }
+    ]
+  },
+
+  halfaya_pass: {
+    name: "Halfaya Pass, Libya–Egypt Border",
+    lat: 31.89, lng: 25.10,
+    type: "battle", typeLabel: "Hellfire Pass — 88mm Killing Ground",
+    minZoom: 5,
+    summary: "The British called it Hellfire Pass. A narrow cut through the escarpment on the Libya–Egypt border, Halfaya Pass was where German 88mm anti-aircraft guns were dug in hull-down, invisible until they fired. The 88mm gun — designed to shoot aircraft — turned out to be the most lethal anti-tank weapon of the war, capable of penetrating any Allied tank at ranges that made the Allies' own guns useless. At Operation Battleaxe in June 1941, British tank crews drove uphill into a wall of 88mm fire they couldn't see. Tanks 'brewed up' — burst into flames — within seconds of being hit. The carnage was total. The pass changed British tactical doctrine about tank-infantry coordination forever.",
+    timeline: [
+      { date: "Apr 1941", event: "German forces seize Halfaya Pass as Rommel advances into Egypt. Captain Wilhelm Bach digs in the 88mm guns, invisible from below." },
+      { date: "May 1941", event: "Operation Brevity: British attempt to recapture the pass. Initial success, then Rommel counterattacks. British fall back." },
+      { date: "Jun 15–17, 1941", event: "Operation Battleaxe: major British offensive. Three tank columns advance. The Halfaya column hits the 88mm wall. Catastrophe. 91 of 100 Matilda tanks in one unit destroyed. Zero ground gained." },
+      { date: "Nov 1941", event: "Operation Crusader. Tobruk relieved. The Halfaya garrison — 'Bach's Bach' — surrounded but refuses to surrender." },
+      { date: "Jan 17, 1942", event: "Halfaya garrison finally surrenders — out of food and water. They had held for 8 months." }
+    ],
+    connections: [
+      { to: "tobruk",       reason: "Operations to relieve Tobruk ran through the Halfaya corridor" },
+      { to: "north_africa", reason: "The pass guarded the coastal road between Egypt and Libya" },
+      { to: "sidi_barrani", reason: "O'Connor's Compass advance bypassed the pass; it became a German strongpoint later" }
+    ]
+  },
+
+  beda_fomm: {
+    name: "Beda Fomm, Libya",
+    lat: 31.05, lng: 20.01,
+    type: "battle", typeLabel: "The Trap — Most Complete Victory",
+    minZoom: 5,
+    summary: "Beda Fomm may be the most complete military victory you've never heard of. In February 1941, as the Italian 10th Army retreated up Libya's coastal road after Sidi Barrani, British General O'Connor sent a small armored force — 3,000 men and fewer than 50 tanks — on a desperate 170-mile dash through unmapped desert to cut them off. They arrived at the crossroads town of Beda Fomm with hours to spare. For two days, 10,000 Italian vehicles — trucks, tanks, artillery — tried to smash through the tiny British roadblock. Wave after wave failed. On February 7, 1941, the entire Italian 10th Army surrendered. 130,000 prisoners. 400 tanks. 1,290 guns. The whole Italian position in North Africa was gone. Churchill called it 'the most complete victory in all history.' Then Rommel arrived.",
+    timeline: [
+      { date: "Jan 1941", event: "O'Connor's force pursues the shattered Italian 10th Army up the Libyan coast after Sidi Barrani and Bardia." },
+      { date: "Feb 4, 1941", event: "O'Connor learns the Italians are retreating. He sends 7th Armoured Brigade on a 170-mile desert crossing — no maps, through total wilderness." },
+      { date: "Feb 5, 1941", event: "British vehicles reach the coastal road at Beda Fomm just hours before the Italian head of column. Roadblock established." },
+      { date: "Feb 5–7, 1941", event: "Italian 10th Army — 10,000 vehicles — smashes against the British position again and again. Every attack fails. British tanks down to their last rounds." },
+      { date: "Feb 7, 1941", event: "Italian commander Berganzoli surrenders. 130,000 prisoners. The entire Italian 10th Army is gone. O'Connor signals: 'Fox killed in the open.'" },
+      { date: "Feb 1941", event: "The road to Tripoli is open — just 500 miles of empty desert. O'Connor is ordered to stop. Rommel arrives three weeks later." }
+    ],
+    connections: [
+      { to: "sidi_barrani",  reason: "The pursuit that began at Sidi Barrani ended in the trap at Beda Fomm" },
+      { to: "tobruk",        reason: "Tobruk fell during the same westward sweep before Beda Fomm" },
+      { to: "north_africa",  reason: "The victory was immediately undone when Rommel arrived and reversed everything" }
+    ]
+  },
+
+  medenine: {
+    name: "Medenine, Tunisia",
+    lat: 33.36, lng: 10.50,
+    type: "battle", typeLabel: "Rommel's Last Battle in Africa",
+    minZoom: 6,
+    summary: "The Battle of Medenine on March 6, 1943 was Rommel's final offensive in Africa — and his most complete failure. Aware of the coming British assault on the Mareth Line, Rommel struck first, hoping to disrupt Montgomery's preparations. What he didn't know was that ULTRA codebreakers had intercepted his entire attack plan. Montgomery had 500 anti-tank guns dug in and waiting across the expected axis of advance. When Rommel's panzers attacked, they drove straight into a hidden wall of fire. 55 tanks were destroyed in a single day. Rommel gained nothing. The next morning he flew to Germany, citing illness, and never returned to Africa. Medenine is discussed in almost no popular histories — it is Rommel's forgotten last stand.",
+    timeline: [
+      { date: "Feb 1943", event: "After Kasserine, Rommel is appointed commander of all Axis forces in Tunisia. He plans one more offensive." },
+      { date: "Mar 5, 1943", event: "ULTRA intercepts Rommel's attack orders. Montgomery has 36 hours warning. 500 anti-tank guns are repositioned overnight." },
+      { date: "Mar 6, 1943 — Dawn", event: "Three panzer divisions attack toward Medenine. They find empty desert — then run into the guns. 55 tanks destroyed." },
+      { date: "Mar 6, 1943 — Evening", event: "Rommel calls off the attack after 8 hours. No ground gained. No British tanks lost at all." },
+      { date: "Mar 7, 1943", event: "Rommel flies to Germany, citing illness. Arnim takes command. Rommel never returns to Africa." },
+      { date: "Mar–May 1943", event: "The Axis position in Tunisia collapses. Without Rommel, the end accelerates." }
+    ],
+    connections: [
+      { to: "mareth_line",  reason: "Medenine was Rommel's attempt to disrupt the coming Mareth offensive" },
+      { to: "tunis",        reason: "After Medenine, the Axis had no answer — Tunisia fell within 10 weeks" },
+      { to: "north_africa", reason: "The man who had dominated the desert for two years left it here, defeated" }
+    ]
+  },
+
+  // ── AFRICA — MEDITERRANEAN ────────────────────────────────────────────
+
+  malta: {
+    name: "Malta",
+    lat: 35.90, lng: 14.51,
+    type: "battle", typeLabel: "The Siege of Malta",
+    minZoom: 4,
+    summary: "Malta was the most bombed place on Earth in 1942 — and the single most important reason Rommel ultimately lost in Africa. The tiny island, 17 miles by 9, sat directly across Rommel's supply route from Italy to Libya. When Malta's airfields and submarines were operational, Axis supply ships were sunk at a rate that left Rommel's tanks running on empty. When Malta was bombed into submission, supplies flowed freely and Rommel advanced. The island sustained over 3,000 air raids between 1940 and 1942. In one month — April 1942 — more bombs fell on Malta than on London during the entire Blitz. The island was collectively awarded the George Cross — Britain's highest civilian honor. Churchill called Malta 'the linchpin of our whole position in the Mediterranean.'",
+    timeline: [
+      { date: "Jun 1940", event: "Italy declares war. Malta bombed the next morning. The island has three operational Gladiator biplanes to defend it. They are named Faith, Hope, and Charity." },
+      { date: "1940–41", event: "Submarines and aircraft from Malta sink 30–40% of Rommel's supplies. The island is under constant attack." },
+      { date: "Apr 1942", event: "Axis blitz intensifies. 6,700 tons of bombs fall in April alone — more than London's entire Blitz. Malta is nearly destroyed." },
+      { date: "Aug 1942", event: "Operation Pedestal. 14 merchant ships fight through to Malta under massive air and submarine attack. Only 5 arrive. The crippled tanker Ohio, lashed between two destroyers, limps in with aviation fuel. Malta survives." },
+      { date: "Nov 1942", event: "El Alamein and Torch end Axis air supremacy. Malta's siege effectively lifted. The island immediately resumes strangling Rommel's supply lines." },
+      { date: "Apr 15, 1942", event: "King George VI awards the George Cross to the island of Malta — the only territory ever to receive the honor." }
+    ],
+    connections: [
+      { to: "north_africa",  reason: "Malta's submarines sank the supplies that could have won Africa for Rommel" },
+      { to: "tunis",         reason: "With Malta operational, Axis Tunisia was strangled from the sea" },
+      { to: "casablanca",    reason: "Allied strategy in the Mediterranean depended on holding Malta" }
+    ]
+  },
+
+  // ── AFRICA — EAST AFRICA ─────────────────────────────────────────────
+
+  keren: {
+    name: "Keren, Eritrea",
+    lat: 15.78, lng: 38.45,
+    type: "battle", typeLabel: "East Africa — Mountain Siege",
+    minZoom: 5,
+    summary: "The Battle of Keren is one of the most completely forgotten major battles of the entire war — and one of the most brutal. Keren, a mountain town in Eritrea, sat at the top of a tortuous gorge that was the only road to Asmara, the Italian colonial capital. Italian engineers had blown the road and fortified every peak surrounding the town. The ground was lunar — sheer cliffs, splintered rock, ravines that offered no cover. British and Indian troops attacked for 53 days straight in blazing heat, taking peaks yard by yard, losing them, retaking them. Sappers had to dynamite an entire mountainside to create a usable route. When the final assault came on March 27, 1941, the Italians withdrew and the road opened. Without Keren, the East Africa campaign stalls. Almost no one knows this battle happened.",
+    timeline: [
+      { date: "Jan 1941", event: "General Platt's Indian and British forces advance into Eritrea. The road to Asmara runs through a single gorge — Keren." },
+      { date: "Feb 3, 1941", event: "First assault on Keren. Italian fortifications on Dologorodoc and Sanchil peaks repulse the attack. Brutal terrain." },
+      { date: "Feb–Mar 1941", event: "53 days of assault and counter-assault. Temperature over 100°F. Indian and Highland troops fight for every rock face." },
+      { date: "Mar 15, 1941", event: "Royal Sappers blow a 100-ton charge into the cliff face, creating 'Platt's Gap' — a route through the gorge." },
+      { date: "Mar 27, 1941", event: "Final assault. 4th Indian Division storms the heights. Italian resistance collapses. 3,000 Italian dead, 4,500 prisoners." },
+      { date: "Apr 1, 1941", event: "Asmara falls. May 17: Massawa naval base captured. Italian Eritrea is finished." }
+    ],
+    connections: [
+      { to: "gondar",       reason: "After Keren, Italian East Africa collapsed — Gondar held out last" },
+      { to: "north_africa", reason: "East African victory freed Allied resources for the Western Desert campaign" }
+    ]
+  },
+
+  gondar: {
+    name: "Gondar, Ethiopia",
+    lat: 12.60, lng: 37.47,
+    type: "battle", typeLabel: "Last Italian Holdout — East Africa",
+    minZoom: 5,
+    summary: "When Addis Ababa fell to British forces on April 6, 1941 and Emperor Haile Selassie returned from exile, the East Africa campaign was declared over. But General Nasi in Gondar, a medieval fortress city in the Ethiopian highlands, never got the memo. With 40,000 Italian and colonial troops — cut off, surrounded, receiving no supplies — he fought on for seven more months while the rest of Italian East Africa had already collapsed. Haile Selassie's forces, British troops, and a ragtag coalition of irregulars besieged the city. Nasi held mountain passes with determined infantry and improvised everything. He finally surrendered on November 27, 1941 — six months after the campaign was supposedly finished — only after his ammunition, food, and medicine were completely exhausted. It was one of the longest and most obscure last stands of the entire war.",
+    timeline: [
+      { date: "Apr 6, 1941", event: "Addis Ababa falls. Haile Selassie restored. Italian East Africa officially conquered — except Gondar." },
+      { date: "May 1941", event: "General Nasi consolidates 40,000 troops in Gondar and surrounding mountain passes. He has no radio to Rome. Decides to fight." },
+      { date: "May–Oct 1941", event: "British and Ethiopian forces probe the Gondar perimeter. Nasi repulses every attack. Mountain terrain favors the defenders." },
+      { date: "Nov 21, 1941", event: "Final Allied offensive: British troops, Ethiopian irregulars, and South African air support assault Gondar from all sides." },
+      { date: "Nov 27, 1941", event: "Gondar falls. Nasi surrenders with full military honors — his last official act. The Italian Empire in East Africa is truly over." }
+    ],
+    connections: [
+      { to: "keren",         reason: "Both were part of the forgotten East Africa campaign — Keren opened it, Gondar closed it" },
+      { to: "north_africa",  reason: "The clearing of East Africa freed the Red Sea route and Allied shipping" }
+    ]
+  },
+
+  // ── AFRICA — WEST AFRICA ─────────────────────────────────────────────
+
+  dakar: {
+    name: "Dakar, Senegal",
+    lat: 14.69, lng: -17.44,
+    type: "battle", typeLabel: "Operation Menace — Allied Fiasco",
+    minZoom: 4,
+    summary: "Dakar was the first major Allied offensive operation of the war — and a complete, humiliating disaster. In September 1940, Churchill and de Gaulle launched Operation Menace: a naval force carrying Free French troops would arrive off Dakar, a major Vichy French port in West Africa, and the garrison would presumably switch sides. It was catastrophically wrong. The Vichy French fought back with conviction — French ships opened fire on French ships. Submarines torpedoed British cruisers. When Free French launches approached, they were fired on. In thick fog, the British battleship HMS Barham and heavy cruisers exchanged fire with shore batteries and the partially repaired French battleship Richelieu. After two days of failure, the fleet withdrew. The debacle nearly ended de Gaulle's career before it began. Churchill was furious. It remains one of the most embarrassing episodes in British naval history.",
+    timeline: [
+      { date: "Jun 1940", event: "France falls. Dakar — home to a major naval base and the battleship Richelieu — becomes a Vichy strategic prize." },
+      { date: "Aug 1940", event: "Churchill and de Gaulle plan Operation Menace. They believe the Dakar garrison will defect to the Free French. Intelligence proves catastrophically wrong." },
+      { date: "Sept 18–19, 1940", event: "Vichy cruisers from Toulon slip through the Strait of Gibraltar — the Royal Navy misses them. They reinforce Dakar." },
+      { date: "Sept 23, 1940", event: "Free French launches approach Dakar under a white flag. Shore batteries open fire. A Free French officer is wounded on his own boat." },
+      { date: "Sept 24–25, 1940", event: "HMS Barham and HMS Resolution engage shore batteries and the Richelieu. British cruisers hit. HMS Resolution torpedoed by French submarine. Fog covers everything." },
+      { date: "Sept 25, 1940", event: "Churchill orders withdrawal. The fleet sails away. Dakar remains Vichy for two more years until Operation Torch in 1942." }
+    ],
+    connections: [
+      { to: "casablanca",   reason: "After Dakar's failure, Casablanca became the western anchor of Operation Torch two years later" },
+      { to: "north_africa", reason: "Control of West African ports was part of the broader Mediterranean–Africa strategy" }
     ]
   },
 
