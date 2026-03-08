@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>World War II — Interactive Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Share+Tech+Mono&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --olive:   #4a5240;
+    --olive-l: #6b7560;
+    --amber:   #c8922a;
+    --amber-l: #e8b050;
+    --red:     #c0392b;
+    --ink:     #0d0d0a;
+    --paper:   #f0e8d0;
+    --paper-d: #d8ceb0;
+    --muted:   rgba(240,232,208,0.5);
+    --panel-w: 380px;
+  }
+
+  html, body { height: 100%; overflow: hidden; background: var(--ink); }
+
+  #map {
+    position: fixed; inset: 0;
+    z-index: 1;
+    background: #0a0d0f;
+    transition: right 0.4s cubic-bezier(0.16,1,0.3,1);
+  }
+  body.panel-open #map { right: var(--panel-w); }
+
+  /* ── Header ── */
+  #header {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 1000;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px;
+    background: linear-gradient(to bottom, rgba(10,13,10,0.95) 0%, transparent 100%);
+    pointer-events: none;
+  }
+  #header h1 {
+    font-family: 'Special Elite', serif;
+    font-size: 17px; letter-spacing: 0.12em; color: var(--amber);
+    text-shadow: 0 0 20px rgba(200,146,42,0.4);
+  }
+  #header .sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase;
+    margin-top: 2px;
+  }
+  #zoom-hint {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px; color: rgba(200,146,42,0.5); letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ── Legend ── */
+  #legend {
+    position: fixed; bottom: 24px; left: 24px; z-index: 1000;
+    background: rgba(10,13,10,0.88);
+    border: 1px solid rgba(200,146,42,0.2);
+    padding: 14px 18px;
+    font-family: 'Share Tech Mono', monospace;
+    pointer-events: none;
+  }
+  #legend .leg-title { font-size: 9px; color: var(--amber); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 10px; }
+  .leg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .leg-line { width: 20px; height: 2px; flex-shrink: 0; border-top: 2px dashed; }
+  .leg-label { font-size: 9px; color: var(--muted); letter-spacing: 0.08em; }
+
+  /* ── Custom markers ── */
+  .marker-pin {
+    width: 26px; height: 26px; border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .marker-pin:hover { transform: rotate(-45deg) scale(1.15); box-shadow: 0 4px 16px rgba(0,0,0,0.8); }
+  .marker-pin .pin-icon {
+    transform: rotate(45deg);
+    font-size: 11px; line-height: 1;
+  }
+
+  .marker-battle  { background: rgba(192,57,43,0.85);  border-color: #e74c3c; }
+  .marker-city    { background: rgba(74,82,64,0.85);   border-color: #6b7560; }
+  .marker-naval   { background: rgba(30,100,140,0.85); border-color: #2980b9; }
+  .marker-atomic  { background: rgba(180,100,10,0.85); border-color: #e67e22; }
+  .marker-camp    { background: rgba(60,30,30,0.85);   border-color: #8e2010; }
+
+  /* small markers at lower zoom */
+  .marker-sm .marker-pin { width: 16px; height: 16px; }
+  .marker-sm .pin-icon { font-size: 7px; }
+
+  /* ── Side panel ── */
+  #panel {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: var(--panel-w);
+    z-index: 500;
+    background: #0e0f0b;
+    border-left: 1px solid rgba(200,146,42,0.2);
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  body.panel-open #panel { transform: translateX(0); }
+
+  #panel-close {
+    position: absolute; top: 16px; right: 16px;
+    background: none; border: 1px solid rgba(200,146,42,0.3);
+    color: var(--amber); font-size: 16px; width: 28px; height: 28px;
+    cursor: pointer; font-family: 'Share Tech Mono', monospace;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  #panel-close:hover { background: rgba(200,146,42,0.1); }
+
+  #panel-scroll { flex: 1; overflow-y: auto; padding: 28px 28px 40px; }
+  #panel-scroll::-webkit-scrollbar { width: 3px; }
+  #panel-scroll::-webkit-scrollbar-track { background: transparent; }
+  #panel-scroll::-webkit-scrollbar-thumb { background: rgba(200,146,42,0.3); }
+
+  .panel-type {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 8px;
+  }
+  #panel-name {
+    font-family: 'Special Elite', serif;
+    font-size: 26px; line-height: 1.1; color: var(--amber);
+    margin-bottom: 4px;
+  }
+  .panel-coords {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px; color: rgba(240,232,208,0.3); letter-spacing: 0.1em;
+    margin-bottom: 20px;
+  }
+  .panel-divider {
+    height: 1px; background: rgba(200,146,42,0.15); margin: 20px 0;
+  }
+  #panel-summary {
+    font-family: 'Special Elite', serif;
+    font-size: 13.5px; line-height: 1.75; color: rgba(240,232,208,0.8);
+    margin-bottom: 8px;
+  }
+
+  /* Timeline */
+  .timeline-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--amber); margin-bottom: 16px;
+  }
+  .timeline { position: relative; padding-left: 20px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 6px; top: 6px; bottom: 6px;
+    width: 1px; background: rgba(200,146,42,0.2);
+  }
+  .tl-item { position: relative; margin-bottom: 18px; }
+  .tl-dot {
+    position: absolute; left: -17px; top: 5px;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--amber); border: 1px solid var(--amber-l);
+  }
+  .tl-date {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px; color: var(--amber); letter-spacing: 0.08em;
+    margin-bottom: 3px;
+  }
+  .tl-event {
+    font-family: 'Special Elite', serif;
+    font-size: 12.5px; line-height: 1.6; color: rgba(240,232,208,0.75);
+  }
+
+  /* Connections */
+  .conn-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--amber); margin-bottom: 12px;
+  }
+  .conn-item {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 8px; cursor: pointer;
+    padding: 6px 8px; transition: background 0.15s;
+  }
+  .conn-item:hover { background: rgba(200,146,42,0.07); }
+  .conn-arrow { font-size: 10px; color: rgba(192,57,43,0.7); }
+  .conn-name {
+    font-family: 'Special Elite', serif;
+    font-size: 12px; color: rgba(240,232,208,0.7);
+    transition: color 0.15s;
+  }
+  .conn-item:hover .conn-name { color: var(--amber); }
+  .conn-reason {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px; color: rgba(240,232,208,0.3); letter-spacing: 0.05em;
+  }
+
+  /* Leaflet overrides */
+  .leaflet-container { background: #0a0d0f !important; font-family: 'Share Tech Mono', monospace; }
+  .leaflet-control-zoom { border: 1px solid rgba(200,146,42,0.3) !important; }
+  .leaflet-control-zoom a {
+    background: rgba(10,13,10,0.9) !important;
+    color: var(--amber) !important;
+    border-color: rgba(200,146,42,0.3) !important;
+    font-family: 'Share Tech Mono', monospace !important;
+  }
+  .leaflet-control-zoom a:hover { background: rgba(200,146,42,0.1) !important; }
+  .leaflet-control-attribution { display: none; }
+
+  /* Animated connection lines */
+  @keyframes dash {
+    to { stroke-dashoffset: -20; }
+  }
+  .leaflet-overlay-pane svg path.animated-line {
+    animation: dash 1.2s linear infinite;
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div>
+    <h1>WORLD WAR II — INTERACTIVE ATLAS</h1>
+    <div class="sub">1939 – 1945 &nbsp;·&nbsp; Zoom in to reveal locations &nbsp;·&nbsp; Click to explore</div>
+  </div>
+  <div id="zoom-hint">Zoom: <span id="zoom-val">3</span></div>
+</div>
+
+<div id="map"></div>
+
+<div id="legend">
+  <div class="leg-title">Legend</div>
+  <div class="leg-row"><div class="leg-dot" style="background:#e74c3c"></div><span class="leg-label">Major Battle</span></div>
+  <div class="leg-row"><div class="leg-dot" style="background:#6b7560"></div><span class="leg-label">City / Region</span></div>
+  <div class="leg-row"><div class="leg-dot" style="background:#2980b9"></div><span class="leg-label">Naval / Pacific</span></div>
+  <div class="leg-row"><div class="leg-dot" style="background:#e67e22"></div><span class="leg-label">Strategic Event</span></div>
+  <div class="leg-row"><div class="leg-dot" style="background:#8e2010"></div><span class="leg-label">Atrocity / Camp</span></div>
+  <div class="leg-row"><div class="leg-line" style="border-color:#e74c3c;opacity:0.7"></div><span class="leg-label">Theater Connection</span></div>
+</div>
+
+<div id="panel">
+  <button id="panel-close" onclick="closePanel()">✕</button>
+  <div id="panel-scroll">
+    <div class="panel-type" id="panel-type"></div>
+    <div id="panel-name"></div>
+    <div class="panel-coords" id="panel-coords"></div>
+    <div id="panel-summary"></div>
+    <div class="panel-divider"></div>
+    <div class="timeline-title">— Timeline</div>
+    <div class="timeline" id="panel-timeline"></div>
+    <div class="panel-divider"></div>
+    <div class="conn-title" id="conn-title">— Connected Locations</div>
+    <div id="panel-connections"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+const LOCATIONS = {
+
+  normandy: {
+    name: "Normandy, France",
+    lat: 49.37, lng: -0.73,
+    type: "battle", typeLabel: "Major Battle",
+    minZoom: 3,
+    summary: "The beaches of Normandy became the stage for the largest seaborne invasion in history. On June 6, 1944 — D-Day — 156,000 Allied troops crossed the English Channel under cover of night and stormed five beaches codenamed Utah, Omaha, Gold, Juno, and Sword. Omaha was the bloodiest; 2,000 Americans fell in a single morning. Within a month, over a million Allied troops had landed in France. Normandy broke the Atlantic Wall and set the Allies on an irreversible march toward Berlin.",
+    timeline: [
+      { date: "1940", event: "Germany occupies France. The Atlantic Wall construction begins along the coast." },
+      { date: "May 1944", event: "Operation Overlord finalized. Eisenhower takes supreme command. Thousands of deception operations (Operation Bodyguard) convince Hitler the invasion will land at Pas-de-Calais." },
+      { date: "June 6, 1944", event: "D-Day. 5,000 ships, 13,000 aircraft, 156,000 troops. Paratroopers drop at midnight. Dawn beach landings begin. 4,400+ Allied dead by nightfall." },
+      { date: "June 7–30", event: "Fierce fighting in the bocage countryside. Caen becomes a brutal urban battleground." },
+      { date: "July 25, 1944", event: "Operation Cobra: massive American breakout. The Western Front cracks open." },
+      { date: "Aug 25, 1944", event: "Paris liberated. French and American forces enter the capital." }
+    ],
+    connections: [
+      { to: "london",      reason: "Overlord planned and staged from England" },
+      { to: "berlin",      reason: "Western Allied advance toward Germany" },
+      { to: "dunkirk",     reason: "Evacuation in 1940 — the army that returned four years later" },
+      { to: "north_africa",reason: "Veterans of North Africa formed Allied invasion core" }
+    ]
+  },
+
+  stalingrad: {
+    name: "Stalingrad, USSR",
+    lat: 48.70, lng: 44.52,
+    type: "battle", typeLabel: "Major Battle",
+    minZoom: 3,
+    summary: "The Battle of Stalingrad was the bloodiest single engagement in the history of warfare — over two million total casualties. Hitler staked his prestige on capturing the city bearing Stalin's name. For five months, German and Soviet forces fought building-by-building, floor-by-floor, sometimes room-by-room. General Paulus' 6th Army was encircled by a Soviet counteroffensive, then slowly strangled. His surrender in February 1943 marked the turning point of the entire Eastern Front.",
+    timeline: [
+      { date: "June 1942", event: "Hitler launches Case Blue: push toward Stalingrad and the Caucasus oil fields." },
+      { date: "Aug 23, 1942", event: "Luftwaffe fire-bombs Stalingrad. 40,000 civilians die in a single night. The city burns." },
+      { date: "Sept 1942", event: "German 6th Army enters the city. Street fighting begins. The Soviet 62nd Army under Chuikov holds." },
+      { date: "Nov 19, 1942", event: "Operation Uranus: Soviet double envelopment. 300,000 Germans trapped in the 'Kessel' (cauldron)." },
+      { date: "Dec 1942", event: "German relief attempts fail. The Luftwaffe's air supply bridge collapses." },
+      { date: "Feb 2, 1943", event: "Field Marshal Paulus surrenders. 91,000 Germans taken prisoner. Only 5,000 survive the Soviet camps." }
+    ],
+    connections: [
+      { to: "berlin",    reason: "The Eastern Front march that ended in Berlin" },
+      { to: "warsaw",    reason: "Soviet advance through Poland after Stalingrad" },
+      { to: "kursk",     reason: "Germans attempt one last offensive before retreating permanently" }
+    ]
+  },
+
+  berlin: {
+    name: "Berlin, Germany",
+    lat: 52.52, lng: 13.41,
+    type: "city", typeLabel: "Capital / Final Battle",
+    minZoom: 3,
+    summary: "Berlin was the nerve center of Nazi Germany and the final objective of two converging Allied armies. Hitler refused to leave even as Soviet shells fell on the Reich Chancellery. By April 1945 the city had become a battlefield of rubble. The Soviets attacked with 2.5 million troops. In his bunker beneath the city, Hitler died by suicide on April 30. The city fell on May 2, and on May 8 Germany surrendered unconditionally. The war in Europe was over.",
+    timeline: [
+      { date: "1933–1939", event: "Berlin becomes the capital of the Third Reich under Hitler. Nuremberg Laws enacted. City hosts 1936 Olympics." },
+      { date: "1940–1943", event: "RAF bombs Berlin in retaliation for the Blitz. Damage grows through the war." },
+      { date: "Feb 1945", event: "Massive Allied air raids. 22,000 tons of bombs fall on Berlin in final months of war." },
+      { date: "Apr 16, 1945", event: "Soviet forces begin the Berlin Offensive. Zhukov and Konev race for the city." },
+      { date: "Apr 30, 1945", event: "Hitler commits suicide in the Führerbunker. Eva Braun dies with him." },
+      { date: "May 2, 1945", event: "Berlin garrison surrenders to Soviet forces. City in ruins — 600,000 buildings destroyed." },
+      { date: "May 8, 1945", event: "V-E Day. Germany signs unconditional surrender. The war in Europe ends." }
+    ],
+    connections: [
+      { to: "normandy",    reason: "Western Allied advance from France" },
+      { to: "stalingrad",  reason: "Eastern Front Soviet advance" },
+      { to: "warsaw",      reason: "Soviet push through Poland to Germany" }
+    ]
+  },
+
+  london: {
+    name: "London, United Kingdom",
+    lat: 51.51, lng: -0.12,
+    type: "city", typeLabel: "Allied Command / The Blitz",
+    minZoom: 3,
+    summary: "London was both the symbol of Allied defiance and the hub of strategic planning for the liberation of Europe. When France fell in 1940, Churchill chose to fight on. The Luftwaffe tried to break British morale during the Blitz — 57 consecutive nights of bombing. They failed. London became the base for governments-in-exile of occupied nations, the planning center for D-Day, and a city that simply refused to bend.",
+    timeline: [
+      { date: "May 1940", event: "Churchill becomes Prime Minister. 'We shall fight on the beaches' speech. Dunkirk evacuation." },
+      { date: "Aug 1940", event: "Battle of Britain begins. The RAF defeats the Luftwaffe in the skies over England." },
+      { date: "Sept 7, 1940", event: "The Blitz begins. London bombed for 57 consecutive nights. 30,000 civilians killed." },
+      { date: "1941–1944", event: "London hosts exiled governments of Poland, France, Norway, and others. SOE conducts special operations across occupied Europe." },
+      { date: "Jun 1944", event: "D-Day launched from English shores. Eisenhower's HQ at Southwick House, Hampshire." },
+      { date: "1944–45", event: "V-1 and V-2 rockets fall on London — Hitler's 'vengeance weapons' come too late to change the war." }
+    ],
+    connections: [
+      { to: "normandy",  reason: "D-Day staged and planned from England" },
+      { to: "dunkirk",   reason: "The evacuation that made continued British resistance possible" },
+      { to: "berlin",    reason: "Strategic bombing campaign and final victory" }
+    ]
+  },
+
+  dunkirk: {
+    name: "Dunkirk, France",
+    lat: 51.03, lng: 2.38,
+    type: "battle", typeLabel: "Evacuation",
+    minZoom: 4,
+    summary: "In May 1940, over 330,000 British and Allied troops were surrounded on the beaches of Dunkirk by a rapidly advancing German army. What could have been total annihilation became a miracle of improvisation. Hundreds of civilian vessels — fishing boats, pleasure craft, ferries — crossed the Channel alongside Royal Navy ships to carry the men home. Churchill called it 'a colossal military disaster' but also 'a deliverance.' The army that escaped at Dunkirk would return to Normandy four years later.",
+    timeline: [
+      { date: "May 10, 1940", event: "Germany invades France and the Low Countries. The Blitzkrieg cuts the Allied armies in two." },
+      { date: "May 24, 1940", event: "Hitler's 'halt order' — Panzer divisions stop short of Dunkirk. A fateful error. British begin evacuating." },
+      { date: "May 26, 1940", event: "Operation Dynamo begins. The 'little ships' cross the Channel." },
+      { date: "May 26 – Jun 4", event: "338,226 soldiers evacuated over nine days. Under constant Luftwaffe attack." },
+      { date: "Jun 4, 1940", event: "Churchill's 'We shall fight on the beaches' speech. The rearguard surrenders." }
+    ],
+    connections: [
+      { to: "london",   reason: "The evacuated army reformed in Britain" },
+      { to: "normandy", reason: "The same army returned four years later" }
+    ]
+  },
+
+  warsaw: {
+    name: "Warsaw, Poland",
+    lat: 52.23, lng: 21.01,
+    type: "city", typeLabel: "Occupation & Uprising",
+    minZoom: 3,
+    summary: "Poland was the first country invaded — on September 1, 1939, when German tanks crossed the border. Warsaw endured five years of brutal Nazi occupation. In 1940 the Nazis sealed 400,000 Jews into a ghetto less than 2 square miles. In 1943 the remaining ghetto inhabitants rose up with smuggled weapons. The uprising was crushed and the ghetto demolished. In 1944 the Polish Home Army launched a broader Warsaw Uprising — 63 days of urban combat. The Soviets halted outside the city while the Germans massacred the resistance and leveled Warsaw to rubble.",
+    timeline: [
+      { date: "Sept 1, 1939", event: "Germany invades Poland. World War II begins. Warsaw besieged." },
+      { date: "Oct 1939", event: "Warsaw falls. German occupation begins. Immediate persecution of Jews and Poles." },
+      { date: "Nov 1940", event: "Warsaw Ghetto sealed. 400,000 Jews crammed into 1.3 square miles." },
+      { date: "Apr 19, 1943", event: "Warsaw Ghetto Uprising. 300 fighters resist SS troops for nearly a month." },
+      { date: "May 1943", event: "Ghetto liquidated. Survivors sent to Treblinka." },
+      { date: "Aug 1, 1944", event: "Warsaw Uprising. 40,000 Home Army fighters rise against German occupation." },
+      { date: "Oct 2, 1944", event: "Uprising crushed after 63 days. 200,000 civilians dead. Germans systematically destroy the city." },
+      { date: "Jan 17, 1945", event: "Soviet forces enter a Warsaw reduced to 85% rubble." }
+    ],
+    connections: [
+      { to: "berlin",      reason: "Nazi command and occupation authority" },
+      { to: "stalingrad",  reason: "Soviet advance through Poland after Stalingrad" },
+      { to: "auschwitz",   reason: "Jews deported from Warsaw ghetto" }
+    ]
+  },
+
+  auschwitz: {
+    name: "Auschwitz-Birkenau, Poland",
+    lat: 50.04, lng: 19.18,
+    type: "camp", typeLabel: "Concentration / Extermination Camp",
+    minZoom: 4,
+    summary: "Auschwitz-Birkenau was the largest and deadliest of the Nazi extermination camps. Between 1940 and 1945, at least 1.1 million people were murdered here — the overwhelming majority of them Jews from across occupied Europe. The camp complex had three main parts: Auschwitz I (the original camp), Auschwitz II-Birkenau (the mass extermination site with four large crematoria), and Auschwitz III-Monowitz (forced labor). The Holocaust — the systematic genocide of six million Jews — was the most deliberate mass murder in recorded history.",
+    timeline: [
+      { date: "May 1940", event: "Auschwitz I established. First prisoners: Polish political detainees." },
+      { date: "Mar 1942", event: "Auschwitz II-Birkenau opens. Construction of gas chambers begins." },
+      { date: "1942–44", event: "Jews from Poland, Hungary, France, Greece, Netherlands, and across Europe transported here." },
+      { date: "May–Jul 1944", event: "Hungarian Jews arrive. Up to 10,000 people murdered daily during peak deportations." },
+      { date: "Nov 1944", event: "Himmler orders destruction of crematoria as Soviets advance." },
+      { date: "Jan 27, 1945", event: "Soviet forces liberate Auschwitz. 7,000 survivors found. Millions are gone." }
+    ],
+    connections: [
+      { to: "warsaw",  reason: "Warsaw Ghetto deportees" },
+      { to: "berlin",  reason: "Nazi high command ordered the Final Solution" }
+    ]
+  },
+
+  pearl_harbor: {
+    name: "Pearl Harbor, Hawaii",
+    lat: 21.36, lng: -157.96,
+    type: "naval", typeLabel: "Surprise Attack",
+    minZoom: 3,
+    summary: "On the morning of December 7, 1941, Japan launched a surprise attack on the US naval base at Pearl Harbor. 353 Japanese aircraft struck in two waves, sinking or damaging 19 ships including eight battleships, and destroying 328 aircraft. 2,403 Americans were killed. President Roosevelt called it 'a date which will live in infamy.' The next day Congress declared war on Japan. Four days later Germany and Italy declared war on the United States — bringing the full industrial might of America into the global conflict.",
+    timeline: [
+      { date: "1930s", event: "Japan expands aggressively in China and Southeast Asia. US oil embargo tightens. War tensions rise." },
+      { date: "Nov 1941", event: "Japanese carrier fleet departs in secret. Six carriers, 414 aircraft, heading for Hawaii." },
+      { date: "Dec 7, 1941 — 7:48 AM", event: "First wave of Japanese aircraft strikes Pearl Harbor. Battleship row is devastated. USS Arizona explodes." },
+      { date: "Dec 7 — 8:55 AM", event: "Second wave hits. Airfields destroyed. The attack lasts under two hours." },
+      { date: "Dec 8, 1941", event: "FDR addresses Congress. War declared on Japan. 'Yesterday, December 7, 1941 — a date which will live in infamy.'" },
+      { date: "Dec 11, 1941", event: "Germany and Italy declare war on the United States. America enters the full global war." }
+    ],
+    connections: [
+      { to: "midway",    reason: "Japan's next strike — and America's first decisive victory" },
+      { to: "hiroshima", reason: "Pacific War ends here — atomic bomb retaliation for Pearl Harbor" },
+      { to: "iwo_jima",  reason: "Island-hopping campaign toward Japan" }
+    ]
+  },
+
+  midway: {
+    name: "Midway Atoll",
+    lat: 28.21, lng: -177.37,
+    type: "naval", typeLabel: "Decisive Naval Battle",
+    minZoom: 4,
+    summary: "The Battle of Midway, fought in June 1942, was the turning point of the Pacific War. Japan's Admiral Yamamoto planned to destroy the remaining US carrier fleet and force a negotiated peace. Instead, American codebreakers had cracked Japanese naval codes, giving Admiral Nimitz advance knowledge of the attack. In a decisive 10-minute engagement, US dive bombers sank four Japanese fleet carriers. Japan lost its offensive capability in the Pacific and never recovered.",
+    timeline: [
+      { date: "Apr 1942", event: "Doolittle Raid bombs Tokyo. Japan resolves to push the defensive perimeter outward — Midway is chosen." },
+      { date: "May 1942", event: "US codebreakers (Station HYPO) crack JN-25 naval code. Nimitz knows Japan's plan." },
+      { date: "Jun 4, 1942", event: "Japanese carriers launch strike on Midway. US torpedo bombers attack and are slaughtered. But they draw down Japanese fighter cover." },
+      { date: "Jun 4 — 10:22 AM", event: "The 'decisive ten minutes.' US dive bombers catch four Japanese carriers with planes on deck. Akagi, Kaga, Soryu sink." },
+      { date: "Jun 6, 1942", event: "Hiryu, the fourth carrier, sunk. Japan retreats. The Battle of Midway is over." }
+    ],
+    connections: [
+      { to: "pearl_harbor", reason: "Japan's strategic follow-up to Pearl Harbor — failed" },
+      { to: "iwo_jima",     reason: "Island-hopping campaign after Midway's victory" }
+    ]
+  },
+
+  hiroshima: {
+    name: "Hiroshima, Japan",
+    lat: 34.39, lng: 132.45,
+    type: "atomic", typeLabel: "Atomic Bombing",
+    minZoom: 3,
+    summary: "On August 6, 1945, the B-29 bomber Enola Gay dropped the first nuclear weapon used in warfare on the city of Hiroshima. 'Little Boy' detonated at 1,900 feet above the city center. In an instant, 80,000 people were dead. By the end of 1945 the death toll reached 140,000. Three days later, a second bomb ('Fat Man') destroyed Nagasaki. On August 15, Emperor Hirohito announced Japan's surrender. The nuclear age had begun. The decision to use the bombs remains one of the most debated in history.",
+    timeline: [
+      { date: "1942–45", event: "Manhattan Project develops the atomic bomb in secret. 130,000 people work on it across America." },
+      { date: "Jul 16, 1945", event: "Trinity test: first nuclear explosion in history. New Mexico desert." },
+      { date: "Aug 6, 1945 — 8:15 AM", event: "Enola Gay drops 'Little Boy.' Hiroshima is obliterated. Flash visible 170 miles away." },
+      { date: "Aug 9, 1945", event: "'Fat Man' destroys Nagasaki. 40,000 killed instantly." },
+      { date: "Aug 15, 1945", event: "Emperor Hirohito announces surrender in a radio broadcast — the first time his voice had ever been heard publicly." },
+      { date: "Sep 2, 1945", event: "Japan signs formal surrender on USS Missouri. World War II ends." }
+    ],
+    connections: [
+      { to: "pearl_harbor", reason: "The Pacific War ends here — 4 years after it began at Pearl Harbor" },
+      { to: "iwo_jima",     reason: "Final island battles before the bomb decision was made" }
+    ]
+  },
+
+  iwo_jima: {
+    name: "Iwo Jima, Japan",
+    lat: 24.78, lng: 141.32,
+    type: "battle", typeLabel: "Pacific Island Battle",
+    minZoom: 4,
+    summary: "The Battle of Iwo Jima was the bloodiest engagement in the history of the US Marine Corps. For 36 days, 70,000 Marines fought 21,000 deeply entrenched Japanese defenders for an eight-square-mile volcanic island. The Japanese had carved 18 kilometers of tunnels into the rock. Nearly all defenders fought to the death — only 216 were taken prisoner. The iconic photograph of Marines raising the flag on Mount Suribachi became the symbol of American sacrifice in the Pacific.",
+    timeline: [
+      { date: "Feb 19, 1945", event: "Marines land on Iwo Jima. Black volcanic sand. Hidden Japanese defenders open fire." },
+      { date: "Feb 23, 1945", event: "Marines reach summit of Mount Suribachi. Flag raised. Joe Rosenthal's photograph taken." },
+      { date: "Feb–Mar 1945", event: "36 days of brutal cave-by-cave fighting. Japanese refuse to surrender." },
+      { date: "Mar 26, 1945", event: "Island declared secure. 6,821 Americans dead. Nearly all 21,000 Japanese defenders killed." }
+    ],
+    connections: [
+      { to: "pearl_harbor", reason: "Pacific island-hopping campaign launched after Pearl Harbor" },
+      { to: "hiroshima",    reason: "Carnage at Iwo Jima influenced decision to use atomic bomb" }
+    ]
+  },
+
+  north_africa: {
+    name: "El Alamein, Egypt",
+    lat: 30.84, lng: 28.95,
+    type: "battle", typeLabel: "North Africa Campaign",
+    minZoom: 4,
+    summary: "The North African campaign was the turning point of the war in the Mediterranean and Middle East. Rommel's Afrika Korps had pushed the British Eighth Army to the gates of Alexandria. At El Alamein in late 1942, General Montgomery launched a decisive counterattack. After 12 days of fierce fighting, Rommel retreated 2,000 miles. Combined with Operation Torch — the Allied landings in Morocco and Algeria — Germany was squeezed from both sides. By May 1943 all of North Africa was in Allied hands.",
+    timeline: [
+      { date: "1940–41", event: "Italy invades Egypt. British counterattack. Rommel arrives with the Afrika Korps and turns the tide." },
+      { date: "Jun 1942", event: "Rommel captures Tobruk. Reaches El Alamein — within striking distance of the Suez Canal." },
+      { date: "Oct 23, 1942", event: "Second Battle of El Alamein. Montgomery launches Operation Lightfoot with 1,000 guns." },
+      { date: "Nov 4, 1942", event: "Rommel breaks. The Eighth Army advances 2,000 miles west." },
+      { date: "Nov 8, 1942", event: "Operation Torch: US and British forces land in Morocco and Algeria." },
+      { date: "May 13, 1943", event: "Last Axis forces in Africa surrender. 275,000 prisoners. The road to Sicily and Italy opens." }
+    ],
+    connections: [
+      { to: "normandy",  reason: "North Africa veterans formed core of D-Day invasion forces" },
+      { to: "stalingrad",reason: "El Alamein and Stalingrad — twin turning points of 1942–43" }
+    ]
+  },
+
+  kursk: {
+    name: "Kursk, USSR",
+    lat: 51.73, lng: 36.19,
+    type: "battle", typeLabel: "Largest Tank Battle",
+    minZoom: 4,
+    summary: "The Battle of Kursk in July 1943 was the largest tank battle in history and the last major German offensive on the Eastern Front. Hitler launched Operation Citadel to pinch off a massive Soviet salient. The Soviets had been warned by intelligence and built the deepest defensive system in history — eight layers of trenches, minefields, and anti-tank guns up to 190 miles deep. The German offensive shattered on these defenses. The Soviets then counterattacked. Germany never regained the initiative in the East.",
+    timeline: [
+      { date: "Mar 1943", event: "After Stalingrad, a large Soviet salient forms at Kursk. German planners see an opportunity." },
+      { date: "Jul 4–5, 1943", event: "Operation Citadel begins. 900,000 Germans with 2,700 tanks attack the Kursk salient." },
+      { date: "Jul 12, 1943", event: "Prokhorovka: the largest single tank engagement. Hundreds of tanks fight at close quarters." },
+      { date: "Jul 13, 1943", event: "Hitler cancels the offensive — news of Allied landings in Sicily demands divisions elsewhere." },
+      { date: "Jul–Aug 1943", event: "Soviet Operation Kutuzov counterattacks. Germans pushed back permanently." }
+    ],
+    connections: [
+      { to: "stalingrad", reason: "Final German attempt to regain initiative after Stalingrad" },
+      { to: "berlin",     reason: "After Kursk, Soviet advance was unstoppable" }
+    ]
+  }
+
+};
+
+// ── Connection line colors ────────────────────────────────────────────────
+const TYPE_COLORS = {
+  battle:  '#e74c3c',
+  city:    '#95a57a',
+  naval:   '#2980b9',
+  atomic:  '#e67e22',
+  camp:    '#8e2010',
+};
+
+// ── MAP INIT ─────────────────────────────────────────────────────────────
+const map = L.map('map', {
+  center: [30, 15],
+  zoom: 3,
+  minZoom: 2,
+  maxZoom: 10,
+  zoomControl: true,
+});
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '©OpenStreetMap ©CartoDB',
+  maxZoom: 19,
+  subdomains: 'abcd',
+}).addTo(map);
+
+// Track zoom
+map.on('zoomend', () => {
+  document.getElementById('zoom-val').textContent = map.getZoom();
+  updateMarkerVisibility();
+});
+
+// ── MARKERS ───────────────────────────────────────────────────────────────
+const markers = {};
+const connectionLines = [];
+let activeId = null;
+
+function makeIcon(type, zoom) {
+  const small = zoom < 5;
+  const emoji = { battle:'⚔', city:'🏛', naval:'⚓', atomic:'☢', camp:'✡' }[type] || '●';
+  return L.divIcon({
+    className: '',
+    html: `<div class="marker-pin marker-${type}${small?' marker-sm':''}"><span class="pin-icon">${emoji}</span></div>`,
+    iconSize: small ? [16,16] : [26,26],
+    iconAnchor: small ? [8,16] : [13,26],
+  });
+}
+
+function createMarkers() {
+  Object.entries(LOCATIONS).forEach(([id, loc]) => {
+    const m = L.marker([loc.lat, loc.lng], {
+      icon: makeIcon(loc.type, map.getZoom()),
+      opacity: 0,
+    }).addTo(map);
+
+    m.on('click', () => openPanel(id));
+    markers[id] = m;
+  });
+  updateMarkerVisibility();
+}
+
+function updateMarkerVisibility() {
+  const z = map.getZoom();
+  Object.entries(LOCATIONS).forEach(([id, loc]) => {
+    const m = markers[id];
+    const visible = z >= loc.minZoom;
+    m.setOpacity(visible ? 1 : 0);
+    m.setIcon(makeIcon(loc.type, z));
+    if (visible) {
+      m.getElement() && (m.getElement().style.pointerEvents = 'auto');
+    } else {
+      m.getElement() && (m.getElement().style.pointerEvents = 'none');
+    }
+  });
+}
+
+// ── PANEL ─────────────────────────────────────────────────────────────────
+function openPanel(id) {
+  const loc = LOCATIONS[id];
+  if (!loc) return;
+  activeId = id;
+
+  // Fill panel
+  document.getElementById('panel-type').textContent = `— ${loc.typeLabel}`;
+  document.getElementById('panel-name').textContent  = loc.name;
+  document.getElementById('panel-coords').textContent = `${loc.lat.toFixed(2)}°N ${Math.abs(loc.lng).toFixed(2)}°${loc.lng>=0?'E':'W'}`;
+  document.getElementById('panel-summary').textContent = loc.summary;
+
+  // Timeline
+  const tl = document.getElementById('panel-timeline');
+  tl.innerHTML = loc.timeline.map(t => `
+    <div class="tl-item">
+      <div class="tl-dot"></div>
+      <div class="tl-date">${t.date}</div>
+      <div class="tl-event">${t.event}</div>
+    </div>
+  `).join('');
+
+  // Connections
+  const connDiv = document.getElementById('panel-connections');
+  if (loc.connections && loc.connections.length) {
+    document.getElementById('conn-title').style.display = 'block';
+    connDiv.innerHTML = loc.connections.map(c => `
+      <div class="conn-item" onclick="jumpTo('${c.to}')">
+        <span class="conn-arrow">→</span>
+        <div>
+          <div class="conn-name">${LOCATIONS[c.to] ? LOCATIONS[c.to].name : c.to}</div>
+          <div class="conn-reason">${c.reason}</div>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    document.getElementById('conn-title').style.display = 'none';
+    connDiv.innerHTML = '';
+  }
+
+  // Draw connection lines
+  clearLines();
+  if (loc.connections) drawLines(id, loc.connections);
+
+  // Open panel
+  document.body.classList.add('panel-open');
+  document.getElementById('panel-scroll').scrollTop = 0;
+
+  // Fly to location
+  map.flyTo([loc.lat, loc.lng], Math.max(map.getZoom(), loc.minZoom + 1), { duration: 1 });
+}
+
+function closePanel() {
+  document.body.classList.remove('panel-open');
+  clearLines();
+  activeId = null;
+}
+
+function jumpTo(id) {
+  openPanel(id);
+}
+
+// ── CONNECTION LINES ──────────────────────────────────────────────────────
+function drawLines(fromId, connections) {
+  const from = LOCATIONS[fromId];
+  connections.forEach(c => {
+    const to = LOCATIONS[c.to];
+    if (!to) return;
+    const color = TYPE_COLORS[from.type] || '#e74c3c';
+    const line = L.polyline(
+      [[from.lat, from.lng], [to.lat, to.lng]],
+      {
+        color, weight: 1.5, opacity: 0.55,
+        dashArray: '6 10',
+        className: 'animated-line',
+      }
+    ).addTo(map);
+    connectionLines.push(line);
+  });
+}
+
+function clearLines() {
+  connectionLines.forEach(l => map.removeLayer(l));
+  connectionLines.length = 0;
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+createMarkers();
+
+// Close panel on map click (not marker click)
+map.on('click', function(e) {
+  if (!e.originalEvent.target.closest('.marker-pin')) {
+    closePanel();
+  }
+});
+</script>
+</body>
+</html>
